@@ -1,6 +1,9 @@
 from typesafe_sdk import Choice, Noul, Score, TypeSafeClient
 from dotenv import load_dotenv
 import os
+import json
+from datetime import datetime
+
 
 load_dotenv()
 
@@ -63,6 +66,28 @@ def make_decision(result: dict):
         return f"AUTO-ROUTE TO {result['team'].upper()}"
 
 
+def save_log(ticket : str , result : dict , decision : str):
+    log_entry = {
+        "timestamp" : datetime.now().isoformat(),
+        "ticket" : ticket,
+        "result" : result,
+        "decision" : decision
+    }
+
+    if os.path.exists("logs.json"):
+        with open("logs.json", "r") as f:
+            logs = json.load(f)
+    else:
+        logs = []
+
+    logs.append(log_entry)
+
+    with open("logs.json", "w") as f:
+        json.dump(logs, f, indent=2)
+
+    print("Log saved successfully")
+
+
 # This part runs when you execute the file
 if __name__ == "__main__":
 
@@ -72,6 +97,8 @@ if __name__ == "__main__":
     print("\nSending to Jev... please wait...")
     result = triage_ticket(ticket)
     decision = make_decision(result)
+
+    save_log(ticket, result, decision)
 
     print("\n---------- RESULTS ----------")
     print(f"Recommended Team     : {result['team']}")
