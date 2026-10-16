@@ -47,7 +47,7 @@ Built as a learning + portfolio project focused on real-world AI decision system
 ---
 
 ## Project Structure
-
+```
 jev-ticket-triage/
 ├── triage.py              # Core logic (LLM + Jev + decision)
 ├── app.py                 # Streamlit web interface
@@ -57,7 +57,7 @@ jev-ticket-triage/
 ├── .env                   # API key (not committed)
 └── README.md
 
-
+```
 ---
 
 ## Setup
