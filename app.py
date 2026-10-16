@@ -1,34 +1,46 @@
 import streamlit as st
-from triage import triage_ticket, make_decision, save_log
+from triage import generate_draft_reply, evaluate_draft_with_jev, make_final_decision, save_log
 
-st.set_page_config(page_title="Smart Ticket Triage", page_icon="🎫")
+st.set_page_config(page_title="Hybrid Ticket System", page_icon="🎫", layout="centered")
 
-st.title("🎫 Smart Ticket Triage System")
-st.write("Paste a customer support ticket below. Jev will analyze it.")
+st.title("🎫 Hybrid Support Ticket System")
+st.write("LLM generates a reply → Jev evaluates it → System decides")
 
-ticket = st.text_area("Customer Ticket", height=150, placeholder="Paste the ticket here...")
+ticket = st.text_area("Customer Ticket", height=150, placeholder="Paste the customer ticket here...")
 
-if st.button("Analyze Ticket"):
+if st.button("Analyze & Generate Reply", type="primary"):
     if not ticket.strip():
         st.warning("Please paste a ticket first.")
     else:
-        with st.spinner("Sending to Jev..."):
-            result = triage_ticket(ticket)
-            decision = make_decision(result)
-            save_log(ticket, result, decision)
+        with st.spinner("1. Generating draft reply with Gemma..."):
+            draft = generate_draft_reply(ticket)
+
+        with st.spinner("2. Evaluating draft with Jev..."):
+            evaluation = evaluate_draft_with_jev(ticket, draft)
+            decision = make_final_decision(evaluation)
+            save_log(ticket, draft, evaluation, decision)
 
         st.success("Analysis complete!")
 
-        st.subheader("Results")
-        st.write(f"**Recommended Team:** {result['team']}")
-        st.write(f"**Team Confidence:** {result['team_confidence']:.2f}")
-        st.write(f"**Urgency Score:** {result['urgency_score']:.2f}")
-        st.write(f"**Escalate Probability:** {result['escalate']:.2f}")
-        st.write(f"**Churn Risk:** {result['churn_risk']:.2f}")
+        # Show Draft
+        st.subheader("Generated Draft Reply")
+        st.info(draft)
 
-        st.markdown("---")
+        # Show Evaluation
+        st.subheader("Jev Evaluation")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("Tone OK", f"{evaluation['tone_ok']:.2f}")
+            st.metric("Safe to Send", f"{evaluation['safe_to_send']:.2f}")
+        with col2:
+            st.metric("Risk of Escalation", f"{evaluation['risk_of_escalation']:.2f}")
+            st.metric("Policy Safe", f"{evaluation['policy_safe']:.2f}")
+
+        # Final Decision
         st.subheader("Final Decision")
-        if "ESCALATE" in decision:
+        if "AUTO-SEND" in decision:
+            st.success(decision)
+        elif "ESCALATE" in decision:
             st.error(decision)
         else:
-            st.success(decision)
+            st.warning(decision)

@@ -1,0 +1,70 @@
+{
+  "timestamp": "2026-10-16T12:04:13.412371",
+  "results": [
+    {
+      "id": 1,
+      "ticket": "I was charged twice for my annual plan this morning and I still don't have access. This is the third time this has happened. If you don't fix it today I'm cancelling.",
+      "expected": "ESCALATE",
+      "decision": "NEEDS REVISION / HUMAN REVIEW",
+      "evaluation": {
+        "tone_ok": 0.95,
+        "safe_to_send": 0.21,
+        "risk_of_escalation": 0.57,
+        "policy_safe": 0.91
+      },
+      "draft": "I\u2019m really sorry for the trouble you\u2019ve experienced\u2014being charged twice and still lacking access is unacceptable, especially after it\u2019s happened before. I\u2019ve flagged this for immediate review by our billing and support teams, and they\u2019ll work to correct the duplicate charge and restore your access as quickly as possible. I understand your frustration and will keep you updated on the progress. Thank you for bringing this to our attention."
+    },
+    {
+      "id": 2,
+      "ticket": "Hi, I just wanted to know the difference between the Pro and Enterprise plans. Can you help?",
+      "expected": "AUTO-SEND or REVIEW",
+      "decision": "NEEDS REVISION / HUMAN REVIEW",
+      "evaluation": {
+        "tone_ok": 0.91,
+        "safe_to_send": 0.68,
+        "risk_of_escalation": 0.07,
+        "policy_safe": 0.97
+      },
+      "draft": "Hi there! I\u2019m happy to help clarify the plans.  \n\nThe **Pro** plan is designed for individual users or small teams, offering core features, standard support, and a set usage limit suitable for everyday projects.  \n\nThe **Enterprise** plan scales for larger organizations, providing advanced admin controls, higher usage limits, dedicated account management, priority support, and additional security/compliance options.  \n\nIf you\u2019d like more details on any specific feature, just let me know!"
+    },
+    {
+      "id": 3,
+      "ticket": "My login is not working after the password reset. I've tried three times already.",
+      "expected": "ESCALATE or REVIEW",
+      "decision": "NEEDS REVISION / HUMAN REVIEW",
+      "evaluation": {
+        "tone_ok": 0.95,
+        "safe_to_send": 0.67,
+        "risk_of_escalation": 0.38,
+        "policy_safe": 0.97
+      },
+      "draft": "I\u2019m sorry you\u2019re having trouble logging in after the reset. Please double\u2011check that you\u2019re entering the exact password sent in the reset email (including any spaces or special characters) and that Caps\u202fLock is off. If you\u2019ve copied the password, try typing it manually to avoid hidden characters. Clearing your browser cache or using an incognito window can also help. If the issue persists after another attempt, let us know and we\u2019ll investigate further. Thank you for your patience."
+    },
+    {
+      "id": 4,
+      "ticket": "Thank you for the quick help last week. Everything is working fine now.",
+      "expected": "AUTO-SEND",
+      "decision": "AUTO-SEND REPLY",
+      "evaluation": {
+        "tone_ok": 0.94,
+        "safe_to_send": 0.93,
+        "risk_of_escalation": 0.05,
+        "policy_safe": 0.98
+      },
+      "draft": "You\u2019re welcome! I\u2019m glad to hear everything is working smoothly now. If you need any further assistance, please don\u2019t hesitate to reach out. Thank you for letting us know!"
+    },
+    {
+      "id": 5,
+      "ticket": "I need a refund for last month's charge. The product didn't work as advertised.",
+      "expected": "ESCALATE or REVIEW",
+      "decision": "NEEDS REVISION / HUMAN REVIEW",
+      "evaluation": {
+        "tone_ok": 0.96,
+        "safe_to_send": 0.31,
+        "risk_of_escalation": 0.47,
+        "policy_safe": 0.94
+      },
+      "draft": "I\u2019m sorry to hear that the product didn\u2019t meet your expectations. I understand how frustrating that can be, and I appreciate you bringing this to our attention. I\u2019ll look into the details of your recent charge and the product\u2019s performance, and we\u2019ll get back to you with the next steps as soon as possible. Thank you for your patience."
+    }
+  ]
+}

@@ -1,77 +1,91 @@
 from typesafe_sdk import Choice, Noul, Score, TypeSafeClient
+from openai import OpenAI
 from dotenv import load_dotenv
 import os
 import json
 from datetime import datetime
 
-
 load_dotenv()
 
-client = TypeSafeClient(
-        api_key=os.getenv("OPENROUTER_API_KEY"),
-        base_url="https://openrouter.ai/api",
-        model="~typesafe/jev-latest"
+# Jev client (decision model)
+jev_client = TypeSafeClient(
+    api_key=os.getenv("OPENROUTER_API_KEY"),
+    base_url="https://openrouter.ai/api",
+    model="~typesafe/jev-latest"
 )
 
-def triage_ticket(ticket_text: str):
+# Generative LLM client (Gemma free)
+api_key = os.getenv("OPENROUTER_API_KEY")
+if not api_key:
+    raise ValueError("OPENROUTER_API_KEY not found. Please check your .env file.")
 
-    response = client.system_one(
-            state=ticket_text,
-            questions={
-                "team": Choice(
-                    instructions="Which team should handle this ticket?",
-                    criteria={
-                        "billing": "Charges, refunds, invoices, payments, subscriptions",
-                        "technical": "Bugs, errors, product not working, integrations",
-                        "account": "Login problems, password, access, permissions",
-                        "sales": "Pricing questions, upgrades, new plans, demos"
-                    }
-                ),
-                "urgency": Score(
-                    instructions="How urgent is this ticket?",
-                    criteria=[
-                        "Can wait a few days",
-                        "Should be handled today",
-                        "Needs immediate attention"
-                    ]
-                ),
-                "escalate": Noul(
-                    instructions="Should this ticket be escalated to a human agent right now?"
-                ),
-                "churn_risk": Noul(
-                    instructions="Does the customer sound like they might cancel or leave?"
-                )
+llm_client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=api_key,
+)
+
+def generate_draft_reply(ticket: str) -> str:
+    """Generate a polite support reply using free Gemma model"""
+    response = llm_client.chat.completions.create(
+        model="nvidia/nemotron-3-super-120b-a12b:free",
+        messages=[
+            {
+                "role": "system",
+                "content": "You are a helpful and professional customer support agent. Write a short, polite, and empathetic reply to the customer ticket. Do not promise specific timelines or refunds unless clearly appropriate. Keep the reply under 120 words."
+            },
+            {
+                "role": "user",
+                "content": ticket
             }
-        )
+        ],
+        max_tokens=300,
+        temperature=0.4
+    )
+    return response.choices[0].message.content.strip()
 
+
+def evaluate_draft_with_jev(ticket: str, draft: str):
+    """Ask Jev to evaluate the generated draft"""
+    state = {
+        "original_ticket": ticket,
+        "draft_reply": draft
+    }
+
+    response = jev_client.system_one(
+        state=state,
+        questions={
+            "tone_ok": Noul(instructions="Is the tone of the draft reply professional and empathetic?"),
+            "safe_to_send": Noul(instructions="Is it safe to send this reply without human review?"),
+            "risk_of_escalation": Noul(instructions="Does this reply risk making the customer more upset?"),
+            "policy_safe": Noul(instructions="Does the reply avoid making unsafe promises (like guaranteed refunds or exact timelines)?")
+        }
+    )
 
     answers = response.answers
     return {
-            "team": answers["team"].choice,
-            "team_confidence": answers["team"].confidence,
-            "urgency_score": answers["urgency"].score,
-            "escalate": answers["escalate"].noul,
-            "churn_risk": answers["churn_risk"].noul
-        }
+        "tone_ok": answers["tone_ok"].noul,
+        "safe_to_send": answers["safe_to_send"].noul,
+        "risk_of_escalation": answers["risk_of_escalation"].noul,
+        "policy_safe": answers["policy_safe"].noul
+    }
 
-def make_decision(result: dict):
-    """
-    Simple rules based on Jev's answers.
-    """
-    if result["escalate"] > 0.75 or result["churn_risk"] > 0.80:
+
+def make_final_decision(eval_result: dict) -> str:
+    if eval_result["safe_to_send"] > 0.80 and eval_result["risk_of_escalation"] < 0.35 and eval_result["policy_safe"] > 0.75:
+        return "AUTO-SEND REPLY"
+    elif eval_result["risk_of_escalation"] > 0.70:
         return "ESCALATE TO HUMAN"
-    elif result["team_confidence"] < 0.70:
-        return "SEND TO REVIEW (low confidence)"
     else:
-        return f"AUTO-ROUTE TO {result['team'].upper()}"
+        return "NEEDS REVISION / HUMAN REVIEW"
 
 
-def save_log(ticket : str , result : dict , decision : str):
+def save_log(ticket: str, draft: str, eval_result: dict, decision: str):
     log_entry = {
-        "timestamp" : datetime.now().isoformat(),
-        "ticket" : ticket,
-        "result" : result,
-        "decision" : decision
+        "timestamp": datetime.now().isoformat(),
+        "ticket": ticket,
+        "draft_reply": draft,
+        "evaluation": eval_result,
+        "decision": decision
     }
 
     if os.path.exists("logs.json"):
@@ -85,26 +99,27 @@ def save_log(ticket : str , result : dict , decision : str):
     with open("logs.json", "w") as f:
         json.dump(logs, f, indent=2)
 
-    print("Log saved successfully")
 
-
-# This part runs when you execute the file
+# For testing in terminal
 if __name__ == "__main__":
+    print("=== Hybrid Ticket System (Phase 4) ===")
+    ticket = input("\nPaste the customer ticket:\n> ")
 
-    print("=== Smart Ticket Triage (Phase 1) ===")
-    ticket = input("\nPaste the customer ticket here:\n> ")
+    print("\n1. Generating draft reply with Gemma...")
+    draft = generate_draft_reply(ticket)
+    print("\nDraft Reply:")
+    print(draft)
 
-    print("\nSending to Jev... please wait...")
-    result = triage_ticket(ticket)
-    decision = make_decision(result)
+    print("\n2. Evaluating draft with Jev...")
+    evaluation = evaluate_draft_with_jev(ticket, draft)
+    decision = make_final_decision(evaluation)
 
-    save_log(ticket, result, decision)
+    save_log(ticket, draft, evaluation, decision)
 
-    print("\n---------- RESULTS ----------")
-    print(f"Recommended Team     : {result['team']}")
-    print(f"Team Confidence      : {result['team_confidence']:.2f}")
-    print(f"Urgency Score        : {result['urgency_score']:.2f}")
-    print(f"Escalate Probability : {result['escalate']:.2f}")
-    print(f"Churn Risk           : {result['churn_risk']:.2f}")
-    print(f"\nFinal Decision       : {decision}")
-    print("-----------------------------")
+    print("\n---------- EVALUATION ----------")
+    print(f"Tone OK            : {evaluation['tone_ok']:.2f}")
+    print(f"Safe to Send       : {evaluation['safe_to_send']:.2f}")
+    print(f"Risk of Escalation : {evaluation['risk_of_escalation']:.2f}")
+    print(f"Policy Safe        : {evaluation['policy_safe']:.2f}")
+    print(f"\nFinal Decision     : {decision}")
+    print("--------------------------------")

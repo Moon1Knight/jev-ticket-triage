@@ -34,5 +34,17 @@
       "churn_risk": 0.97
     },
     "decision": "ESCALATE TO HUMAN"
+  },
+  {
+    "timestamp": "2026-10-16T12:01:00.218427",
+    "ticket": "I was charged twice for my annual plan this morning and I still don't have access. This is the third time this has happened. If you don't fix it today I'm cancelling.",
+    "draft_reply": "I\u2019m sorry you\u2019ve been charged twice and still can\u2019t access your plan\u2014especially after this has happened before. I understand how frustrating that must be. I\u2019ve flagged your account for an immediate review of the duplicate charge and access issue, and our team will work to resolve it as quickly as possible. Please let us know if you need any further assistance in the meantime. Thank you for bringing this to our attention.",
+    "evaluation": {
+      "tone_ok": 0.94,
+      "safe_to_send": 0.15,
+      "risk_of_escalation": 0.7,
+      "policy_safe": 0.92
+    },
+    "decision": "NEEDS REVISION / HUMAN REVIEW"
   }
 ]
